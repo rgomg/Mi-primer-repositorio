@@ -11,7 +11,7 @@ namespace Actividad5
 
 			//Padding agrega un margen al contenido
 			//Device.OnPlatform permite modificar este margen dependiendo de la plataforma IOS, Android y Windows Phone
-			//Para saber más sobe Device.OnPlatform revisa http://developer.xamarin.com/guides/cross-platform/xamarin-forms/working-with/platform-specifics/
+			//Para saber más sobe Device.OnPlatform revisa 
 			contentPage.Padding = new Thickness (5, Device.OnPlatform (20, 5, 5), 5, 5);
 
 			//Stacklayout permite apilar los controles verticalmente
