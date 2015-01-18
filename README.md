@@ -1,5 +1,4 @@
 # Xamarin
-Programación de dispositivos móviles
 
 Bienvenido a la asignatura de Programación de Dispositivos Móviles
 
