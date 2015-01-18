@@ -1,0 +1,35 @@
+# Version: 8.6.0.51 (dfb682f)
+# [first argument, ignore] # /Users/tiempor3al/Projects/programacion_dispositivos_moviles/Xamarin/Actividad10/iOS/bin/iPhone/Debug/mtouch.exe
+/Library/Frameworks/Xamarin.iOS.framework/Versions/8.6.0.51/bin/mtouch-64 \
+	-sdkroot \
+	/Applications/Xcode.app/Contents/Developer \
+	--cache \
+	/Users/tiempor3al/Projects/programacion_dispositivos_moviles/Xamarin/Actividad10/iOS/obj/iPhone/Debug/mtouch-cache \
+	--executable \
+	Actividad10iOS \
+	--nomanifest \
+	--nosign \
+	-dev \
+	/Users/tiempor3al/Projects/programacion_dispositivos_moviles/Xamarin/Actividad10/iOS/bin/iPhone/Debug/Actividad10iOS.app \
+	-r \
+	/Library/Frameworks/Xamarin.iOS.framework/Versions/Current/lib/mono/2.1/System.dll \
+	-r \
+	/Library/Frameworks/Xamarin.iOS.framework/Versions/Current/lib/mono/2.1/System.Xml.dll \
+	-r \
+	/Library/Frameworks/Xamarin.iOS.framework/Versions/Current/lib/mono/2.1/System.Core.dll \
+	-r \
+	/Library/Frameworks/Xamarin.iOS.framework/Versions/Current/lib/mono/2.1/monotouch.dll \
+	-r \
+	/Users/tiempor3al/Projects/programacion_dispositivos_moviles/Xamarin/Actividad10/packages/Xamarin.Forms.1.0.6186/lib/MonoTouch10/Xamarin.Forms.Platform.iOS.dll \
+	-r \
+	/Users/tiempor3al/Projects/programacion_dispositivos_moviles/Xamarin/Actividad10/packages/Xamarin.Forms.1.0.6186/lib/MonoTouch10/Xamarin.Forms.Core.dll \
+	-r \
+	/Users/tiempor3al/Projects/programacion_dispositivos_moviles/Xamarin/Actividad10/packages/Xamarin.Forms.1.0.6186/lib/MonoTouch10/Xamarin.Forms.Xaml.dll \
+	-debug \
+	-linksdkonly \
+	-sdk \
+	8.1 \
+	-targetver \
+	7.0 \
+	--abi=armv7 \
+	/Users/tiempor3al/Projects/programacion_dispositivos_moviles/Xamarin/Actividad10/iOS/bin/iPhone/Debug/Actividad10iOS.exe \
