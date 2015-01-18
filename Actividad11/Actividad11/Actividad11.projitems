@@ -11,5 +11,7 @@
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)Actividad11.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Contenido.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Frutas.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)FrutasCell.cs" />
   </ItemGroup>
 </Project>

@@ -58,7 +58,60 @@ bool native_to_managed_trampoline_1 (id self, SEL _cmd, MonoMethod **managed_met
 }
 
 
-void native_to_managed_trampoline_2 (id self, SEL _cmd, MonoMethod **managed_method_ptr, id p0, const char *r0, const char *r1, const char *r2)
+bool native_to_managed_trampoline_2 (id self, SEL _cmd, MonoMethod **managed_method_ptr, void * p0, const char *r0, const char *r1, const char *r2)
+{
+	MonoMethod *managed_method = *managed_method_ptr;
+	void *arg_ptrs [1];
+	MonoObject *mthis;
+	if (mono_domain_get () == NULL)
+		mono_jit_thread_attach (NULL);
+	mthis = NULL;
+	if (self) {
+		mthis = xamarin_get_managed_object_for_ptr_fast (self, false);
+	}
+	if (!managed_method) {
+		const char *paramptr[1] = { r0 };
+		managed_method = xamarin_get_reflection_method_method (xamarin_get_method_direct(r1, r2, 1, paramptr));
+		*managed_method_ptr = managed_method;
+	}
+	xamarin_check_for_gced_object (mthis, _cmd, self, managed_method);
+	void * a0 = p0;
+	arg_ptrs [0] = &a0;
+
+	void * retval = mono_runtime_invoke (managed_method, mthis, arg_ptrs, NULL);
+
+	bool res;
+	res = *(bool *) mono_object_unbox (retval);
+
+	return res;
+}
+
+
+id native_to_managed_trampoline_3 (id self, SEL _cmd, MonoMethod **managed_method_ptr, const char *r0, const char *r1)
+{
+	MonoMethod *managed_method = *managed_method_ptr;
+	void *arg_ptrs [0];
+	MonoObject *mthis;
+	if (mono_domain_get () == NULL)
+		mono_jit_thread_attach (NULL);
+	if (xamarin_try_get_nsobject (self))
+		return self;
+	if (!managed_method) {
+		managed_method = xamarin_get_reflection_method_method (xamarin_get_method_direct(r0, r1, 0, NULL));
+		*managed_method_ptr = managed_method;
+	}
+	mthis = mono_object_new (mono_domain_get (), mono_method_get_class (managed_method));
+	uint8_t flags = 2;
+	xamarin_set_nsobject_handle (mthis, self);
+	xamarin_set_nsobject_flags (mthis, flags);
+	mono_runtime_invoke (managed_method, mthis, arg_ptrs, NULL);
+	xamarin_create_managed_ref (self, mthis, true);
+
+	return self;
+}
+
+
+void native_to_managed_trampoline_4 (id self, SEL _cmd, MonoMethod **managed_method_ptr, id p0, const char *r0, const char *r1, const char *r2)
 {
 	MonoMethod *managed_method = *managed_method_ptr;
 	void *arg_ptrs [1];
@@ -88,59 +141,6 @@ void native_to_managed_trampoline_2 (id self, SEL _cmd, MonoMethod **managed_met
 	mono_runtime_invoke (managed_method, mthis, arg_ptrs, NULL);
 
 	return;
-}
-
-
-bool native_to_managed_trampoline_3 (id self, SEL _cmd, MonoMethod **managed_method_ptr, void * p0, const char *r0, const char *r1, const char *r2)
-{
-	MonoMethod *managed_method = *managed_method_ptr;
-	void *arg_ptrs [1];
-	MonoObject *mthis;
-	if (mono_domain_get () == NULL)
-		mono_jit_thread_attach (NULL);
-	mthis = NULL;
-	if (self) {
-		mthis = xamarin_get_managed_object_for_ptr_fast (self, false);
-	}
-	if (!managed_method) {
-		const char *paramptr[1] = { r0 };
-		managed_method = xamarin_get_reflection_method_method (xamarin_get_method_direct(r1, r2, 1, paramptr));
-		*managed_method_ptr = managed_method;
-	}
-	xamarin_check_for_gced_object (mthis, _cmd, self, managed_method);
-	void * a0 = p0;
-	arg_ptrs [0] = &a0;
-
-	void * retval = mono_runtime_invoke (managed_method, mthis, arg_ptrs, NULL);
-
-	bool res;
-	res = *(bool *) mono_object_unbox (retval);
-
-	return res;
-}
-
-
-id native_to_managed_trampoline_4 (id self, SEL _cmd, MonoMethod **managed_method_ptr, const char *r0, const char *r1)
-{
-	MonoMethod *managed_method = *managed_method_ptr;
-	void *arg_ptrs [0];
-	MonoObject *mthis;
-	if (mono_domain_get () == NULL)
-		mono_jit_thread_attach (NULL);
-	if (xamarin_try_get_nsobject (self))
-		return self;
-	if (!managed_method) {
-		managed_method = xamarin_get_reflection_method_method (xamarin_get_method_direct(r0, r1, 0, NULL));
-		*managed_method_ptr = managed_method;
-	}
-	mthis = mono_object_new (mono_domain_get (), mono_method_get_class (managed_method));
-	uint8_t flags = 2;
-	xamarin_set_nsobject_handle (mthis, self);
-	xamarin_set_nsobject_flags (mthis, flags);
-	mono_runtime_invoke (managed_method, mthis, arg_ptrs, NULL);
-	xamarin_create_managed_ref (self, mthis, true);
-
-	return self;
 }
 
 
@@ -1697,23 +1697,17 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 
 
 
-@interface Xamarin_Forms_Platform_iOS_FormsApplicationDelegate : NSObject/*<UIApplicationDelegate>*/ {
+@interface AppDelegate : NSObject/*<UIApplicationDelegate>*/ {
 	void *__monoObjectGCHandle;
 }
 	-(void) release;
 	-(id) retain;
 	-(void) dealloc;
-	-(bool) application:(id)p0 willFinishLaunchingWithOptions:(id)p1;
 	-(bool) application:(id)p0 didFinishLaunchingWithOptions:(id)p1;
-	-(void) applicationDidBecomeActive:(id)p0;
-	-(void) applicationWillResignActive:(id)p0;
-	-(void) applicationDidEnterBackground:(id)p0;
-	-(void) applicationWillEnterForeground:(id)p0;
-	-(void) applicationWillTerminate:(id)p0;
 	-(bool) conformsToProtocol:(void *)p0;
 	-(id) init;
 @end
-@implementation Xamarin_Forms_Platform_iOS_FormsApplicationDelegate { } 
+@implementation AppDelegate { } 
 	-(void) release
 	{
 		xamarin_release_trampoline (self, _cmd);
@@ -1733,78 +1727,22 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 		[super dealloc];
 	}
 
-	-(bool) application:(id)p0 willFinishLaunchingWithOptions:(id)p1
-	{
-		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_1 (self, _cmd, &managed_method, p0, p1, "UIKit.UIApplication, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Foundation.NSDictionary, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Xamarin.Forms.Platform.iOS.FormsApplicationDelegate, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", "WillFinishLaunching");
-	}
-
-	-(bool) application:(id)p0 didFinishLaunchingWithOptions:(id)p1
-	{
-		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_1 (self, _cmd, &managed_method, p0, p1, "UIKit.UIApplication, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Foundation.NSDictionary, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Xamarin.Forms.Platform.iOS.FormsApplicationDelegate, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", "FinishedLaunching");
-	}
-
-	-(void) applicationDidBecomeActive:(id)p0
-	{
-		static MonoMethod *managed_method = NULL;
-		native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "UIKit.UIApplication, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Xamarin.Forms.Platform.iOS.FormsApplicationDelegate, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", "OnActivated");
-	}
-
-	-(void) applicationWillResignActive:(id)p0
-	{
-		static MonoMethod *managed_method = NULL;
-		native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "UIKit.UIApplication, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Xamarin.Forms.Platform.iOS.FormsApplicationDelegate, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", "OnResignActivation");
-	}
-
-	-(void) applicationDidEnterBackground:(id)p0
-	{
-		static MonoMethod *managed_method = NULL;
-		native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "UIKit.UIApplication, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Xamarin.Forms.Platform.iOS.FormsApplicationDelegate, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", "DidEnterBackground");
-	}
-
-	-(void) applicationWillEnterForeground:(id)p0
-	{
-		static MonoMethod *managed_method = NULL;
-		native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "UIKit.UIApplication, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Xamarin.Forms.Platform.iOS.FormsApplicationDelegate, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", "WillEnterForeground");
-	}
-
-	-(void) applicationWillTerminate:(id)p0
-	{
-		static MonoMethod *managed_method = NULL;
-		native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "UIKit.UIApplication, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Xamarin.Forms.Platform.iOS.FormsApplicationDelegate, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", "WillTerminate");
-	}
-
-	-(bool) conformsToProtocol:(void *)p0
-	{
-		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
-	}
-
-	-(id) init
-	{
-		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.FormsApplicationDelegate, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
-	}
-@end
-
-@interface AppDelegate : Xamarin_Forms_Platform_iOS_FormsApplicationDelegate {
-}
-	-(bool) application:(id)p0 didFinishLaunchingWithOptions:(id)p1;
-	-(id) init;
-@end
-@implementation AppDelegate { } 
-
 	-(bool) application:(id)p0 didFinishLaunchingWithOptions:(id)p1
 	{
 		static MonoMethod *managed_method = NULL;
 		return native_to_managed_trampoline_1 (self, _cmd, &managed_method, p0, p1, "UIKit.UIApplication, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Foundation.NSDictionary, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Actividad11.iOS.AppDelegate, Actividad11.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null", "FinishedLaunching");
 	}
 
+	-(bool) conformsToProtocol:(void *)p0
+	{
+		static MonoMethod *managed_method = NULL;
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+	}
+
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "Actividad11.iOS.AppDelegate, Actividad11.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "Actividad11.iOS.AppDelegate, Actividad11.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null", ".ctor");
 	}
 @end
 
@@ -1840,13 +1778,13 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(void) post:(id)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "Foundation.NSNotification, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Foundation.InternalNSNotificationHandler, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Post");
+		native_to_managed_trampoline_4 (self, _cmd, &managed_method, p0, "Foundation.NSNotification, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Foundation.InternalNSNotificationHandler, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Post");
 	}
 
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
 	}
 @end
 
@@ -1888,7 +1826,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
 	}
 @end
 
@@ -1924,13 +1862,13 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(void) xamarinFireSelector:(id)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "Foundation.NSTimer, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Foundation.NSTimerActionDispatcher, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Fire");
+		native_to_managed_trampoline_4 (self, _cmd, &managed_method, p0, "Foundation.NSTimer, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Foundation.NSTimerActionDispatcher, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Fire");
 	}
 
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
 	}
 @end
 
@@ -1972,7 +1910,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
 	}
 @end
 
@@ -2014,7 +1952,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
 	}
 @end
 
@@ -2057,13 +1995,13 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
 	}
 
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "Foundation.NSObject+NSObject_Disposer, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "Foundation.NSObject+NSObject_Disposer, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", ".ctor");
 	}
 @end
 
@@ -2104,7 +2042,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(void) actionSheetCancel:(id)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "UIKit.UIActionSheet, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UIActionSheet+_UIActionSheetDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Canceled");
+		native_to_managed_trampoline_4 (self, _cmd, &managed_method, p0, "UIKit.UIActionSheet, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UIActionSheet+_UIActionSheetDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Canceled");
 	}
 
 	-(void) actionSheet:(id)p0 clickedButtonAtIndex:(NSInteger)p1
@@ -2122,7 +2060,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(void) didPresentActionSheet:(id)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "UIKit.UIActionSheet, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UIActionSheet+_UIActionSheetDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Presented");
+		native_to_managed_trampoline_4 (self, _cmd, &managed_method, p0, "UIKit.UIActionSheet, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UIActionSheet+_UIActionSheetDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Presented");
 	}
 
 	-(void) actionSheet:(id)p0 willDismissWithButtonIndex:(NSInteger)p1
@@ -2134,13 +2072,13 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(void) willPresentActionSheet:(id)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "UIKit.UIActionSheet, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UIActionSheet+_UIActionSheetDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "WillPresent");
+		native_to_managed_trampoline_4 (self, _cmd, &managed_method, p0, "UIKit.UIActionSheet, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UIActionSheet+_UIActionSheetDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "WillPresent");
 	}
 
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
 	}
 @end
 
@@ -2182,7 +2120,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(void) alertViewCancel:(id)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "UIKit.UIAlertView, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UIAlertView+_UIAlertViewDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Canceled");
+		native_to_managed_trampoline_4 (self, _cmd, &managed_method, p0, "UIKit.UIAlertView, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UIAlertView+_UIAlertViewDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Canceled");
 	}
 
 	-(void) alertView:(id)p0 clickedButtonAtIndex:(NSInteger)p1
@@ -2200,7 +2138,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(void) didPresentAlertView:(id)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "UIKit.UIAlertView, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UIAlertView+_UIAlertViewDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Presented");
+		native_to_managed_trampoline_4 (self, _cmd, &managed_method, p0, "UIKit.UIAlertView, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UIAlertView+_UIAlertViewDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Presented");
 	}
 
 	-(bool) alertViewShouldEnableFirstOtherButton:(id)p0
@@ -2218,13 +2156,13 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(void) willPresentAlertView:(id)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "UIKit.UIAlertView, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UIAlertView+_UIAlertViewDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "WillPresent");
+		native_to_managed_trampoline_4 (self, _cmd, &managed_method, p0, "UIKit.UIAlertView, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UIAlertView+_UIAlertViewDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "WillPresent");
 	}
 
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
 	}
 @end
 
@@ -2261,19 +2199,19 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(void) InvokeAction:(id)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UIBarButtonItem+Callback, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Call");
+		native_to_managed_trampoline_4 (self, _cmd, &managed_method, p0, "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UIBarButtonItem+Callback, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Call");
 	}
 
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
 	}
 
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "UIKit.UIBarButtonItem+Callback, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "UIKit.UIBarButtonItem+Callback, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", ".ctor");
 	}
 @end
 
@@ -2309,13 +2247,13 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
 	}
 
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "UIKit.UIGestureRecognizer+Token, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "UIKit.UIGestureRecognizer+Token, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", ".ctor");
 	}
 @end
 
@@ -2341,7 +2279,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(void) target:(id)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "UIKit.UIGestureRecognizer, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UIGestureRecognizer+ParametrizedDispatch, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Activated");
+		native_to_managed_trampoline_4 (self, _cmd, &managed_method, p0, "UIKit.UIGestureRecognizer, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UIGestureRecognizer+ParametrizedDispatch, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Activated");
 	}
 @end
 
@@ -2412,13 +2350,13 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
 	}
 
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "UIKit.UIGestureRecognizer+_UIGestureRecognizerDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "UIKit.UIGestureRecognizer+_UIGestureRecognizerDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", ".ctor");
 	}
 @end
 
@@ -2431,7 +2369,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(void) target:(id)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "UIKit.UILongPressGestureRecognizer, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UILongPressGestureRecognizer+Callback, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Activated");
+		native_to_managed_trampoline_4 (self, _cmd, &managed_method, p0, "UIKit.UILongPressGestureRecognizer, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UILongPressGestureRecognizer+Callback, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Activated");
 	}
 @end
 
@@ -2444,7 +2382,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(void) target:(id)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "UIKit.UITapGestureRecognizer, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UITapGestureRecognizer+Callback, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Activated");
+		native_to_managed_trampoline_4 (self, _cmd, &managed_method, p0, "UIKit.UITapGestureRecognizer, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UITapGestureRecognizer+Callback, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Activated");
 	}
 @end
 
@@ -2457,7 +2395,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(void) target:(id)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "UIKit.UIPanGestureRecognizer, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UIPanGestureRecognizer+Callback, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Activated");
+		native_to_managed_trampoline_4 (self, _cmd, &managed_method, p0, "UIKit.UIPanGestureRecognizer, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UIPanGestureRecognizer+Callback, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Activated");
 	}
 @end
 
@@ -2499,7 +2437,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
 	}
 @end
 
@@ -2566,37 +2504,37 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(void) searchBarBookmarkButtonClicked:(id)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "UIKit.UISearchBar, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UISearchBar+_UISearchBarDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "BookmarkButtonClicked");
+		native_to_managed_trampoline_4 (self, _cmd, &managed_method, p0, "UIKit.UISearchBar, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UISearchBar+_UISearchBarDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "BookmarkButtonClicked");
 	}
 
 	-(void) searchBarCancelButtonClicked:(id)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "UIKit.UISearchBar, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UISearchBar+_UISearchBarDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "CancelButtonClicked");
+		native_to_managed_trampoline_4 (self, _cmd, &managed_method, p0, "UIKit.UISearchBar, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UISearchBar+_UISearchBarDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "CancelButtonClicked");
 	}
 
 	-(void) searchBarResultsListButtonClicked:(id)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "UIKit.UISearchBar, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UISearchBar+_UISearchBarDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "ListButtonClicked");
+		native_to_managed_trampoline_4 (self, _cmd, &managed_method, p0, "UIKit.UISearchBar, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UISearchBar+_UISearchBarDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "ListButtonClicked");
 	}
 
 	-(void) searchBarTextDidBeginEditing:(id)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "UIKit.UISearchBar, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UISearchBar+_UISearchBarDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "OnEditingStarted");
+		native_to_managed_trampoline_4 (self, _cmd, &managed_method, p0, "UIKit.UISearchBar, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UISearchBar+_UISearchBarDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "OnEditingStarted");
 	}
 
 	-(void) searchBarTextDidEndEditing:(id)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "UIKit.UISearchBar, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UISearchBar+_UISearchBarDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "OnEditingStopped");
+		native_to_managed_trampoline_4 (self, _cmd, &managed_method, p0, "UIKit.UISearchBar, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UISearchBar+_UISearchBarDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "OnEditingStopped");
 	}
 
 	-(void) searchBarSearchButtonClicked:(id)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "UIKit.UISearchBar, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UISearchBar+_UISearchBarDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "SearchButtonClicked");
+		native_to_managed_trampoline_4 (self, _cmd, &managed_method, p0, "UIKit.UISearchBar, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UISearchBar+_UISearchBarDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "SearchButtonClicked");
 	}
 
 	-(void) searchBar:(id)p0 selectedScopeButtonIndexDidChange:(NSInteger)p1
@@ -2632,13 +2570,13 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
 	}
 
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "UIKit.UISearchBar+_UISearchBarDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "UIKit.UISearchBar+_UISearchBarDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", ".ctor");
 	}
 @end
 
@@ -2681,13 +2619,13 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(void) textFieldDidEndEditing:(id)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "UIKit.UITextField, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UITextField+_UITextFieldDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "EditingEnded");
+		native_to_managed_trampoline_4 (self, _cmd, &managed_method, p0, "UIKit.UITextField, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UITextField+_UITextFieldDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "EditingEnded");
 	}
 
 	-(void) textFieldDidBeginEditing:(id)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "UIKit.UITextField, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UITextField+_UITextFieldDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "EditingStarted");
+		native_to_managed_trampoline_4 (self, _cmd, &managed_method, p0, "UIKit.UITextField, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UITextField+_UITextFieldDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "EditingStarted");
 	}
 
 	-(bool) textFieldShouldBeginEditing:(id)p0
@@ -2723,13 +2661,13 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
 	}
 
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "UIKit.UITextField+_UITextFieldDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "UIKit.UITextField+_UITextFieldDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", ".ctor");
 	}
 @end
 
@@ -2774,25 +2712,25 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(void) textViewDidChange:(id)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "UIKit.UITextView, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UITextView+_UITextViewDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Changed");
+		native_to_managed_trampoline_4 (self, _cmd, &managed_method, p0, "UIKit.UITextView, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UITextView+_UITextViewDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Changed");
 	}
 
 	-(void) textViewDidEndEditing:(id)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "UIKit.UITextView, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UITextView+_UITextViewDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "EditingEnded");
+		native_to_managed_trampoline_4 (self, _cmd, &managed_method, p0, "UIKit.UITextView, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UITextView+_UITextViewDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "EditingEnded");
 	}
 
 	-(void) textViewDidBeginEditing:(id)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "UIKit.UITextView, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UITextView+_UITextViewDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "EditingStarted");
+		native_to_managed_trampoline_4 (self, _cmd, &managed_method, p0, "UIKit.UITextView, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UITextView+_UITextViewDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "EditingStarted");
 	}
 
 	-(void) textViewDidChangeSelection:(id)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "UIKit.UITextView, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UITextView+_UITextViewDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "SelectionChanged");
+		native_to_managed_trampoline_4 (self, _cmd, &managed_method, p0, "UIKit.UITextView, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UITextView+_UITextViewDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "SelectionChanged");
 	}
 
 	-(bool) textViewShouldBeginEditing:(id)p0
@@ -2828,13 +2766,13 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
 	}
 
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "UIKit.UITextView+_UITextViewDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "UIKit.UITextView+_UITextViewDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", ".ctor");
 	}
 @end
 
@@ -2883,19 +2821,19 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(void) scrollViewDidEndDecelerating:(id)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "UIKit.UIScrollView, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UIScrollView+_UIScrollViewDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "DecelerationEnded");
+		native_to_managed_trampoline_4 (self, _cmd, &managed_method, p0, "UIKit.UIScrollView, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UIScrollView+_UIScrollViewDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "DecelerationEnded");
 	}
 
 	-(void) scrollViewWillBeginDecelerating:(id)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "UIKit.UIScrollView, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UIScrollView+_UIScrollViewDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "DecelerationStarted");
+		native_to_managed_trampoline_4 (self, _cmd, &managed_method, p0, "UIKit.UIScrollView, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UIScrollView+_UIScrollViewDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "DecelerationStarted");
 	}
 
 	-(void) scrollViewDidZoom:(id)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "UIKit.UIScrollView, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UIScrollView+_UIScrollViewDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "DidZoom");
+		native_to_managed_trampoline_4 (self, _cmd, &managed_method, p0, "UIKit.UIScrollView, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UIScrollView+_UIScrollViewDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "DidZoom");
 	}
 
 	-(void) scrollViewDidEndDragging:(id)p0 willDecelerate:(bool)p1
@@ -2907,25 +2845,25 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(void) scrollViewWillBeginDragging:(id)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "UIKit.UIScrollView, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UIScrollView+_UIScrollViewDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "DraggingStarted");
+		native_to_managed_trampoline_4 (self, _cmd, &managed_method, p0, "UIKit.UIScrollView, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UIScrollView+_UIScrollViewDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "DraggingStarted");
 	}
 
 	-(void) scrollViewDidEndScrollingAnimation:(id)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "UIKit.UIScrollView, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UIScrollView+_UIScrollViewDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "ScrollAnimationEnded");
+		native_to_managed_trampoline_4 (self, _cmd, &managed_method, p0, "UIKit.UIScrollView, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UIScrollView+_UIScrollViewDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "ScrollAnimationEnded");
 	}
 
 	-(void) scrollViewDidScroll:(id)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "UIKit.UIScrollView, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UIScrollView+_UIScrollViewDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Scrolled");
+		native_to_managed_trampoline_4 (self, _cmd, &managed_method, p0, "UIKit.UIScrollView, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UIScrollView+_UIScrollViewDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Scrolled");
 	}
 
 	-(void) scrollViewDidScrollToTop:(id)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "UIKit.UIScrollView, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UIScrollView+_UIScrollViewDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "ScrolledToTop");
+		native_to_managed_trampoline_4 (self, _cmd, &managed_method, p0, "UIKit.UIScrollView, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "UIKit.UIScrollView+_UIScrollViewDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "ScrolledToTop");
 	}
 
 	-(bool) scrollViewShouldScrollToTop:(id)p0
@@ -2961,13 +2899,13 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
 	}
 
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "UIKit.UIScrollView+_UIScrollViewDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "UIKit.UIScrollView+_UIScrollViewDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", ".ctor");
 	}
 @end
 
@@ -3009,7 +2947,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
 	}
 @end
 
@@ -3065,7 +3003,98 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+	}
+@end
+
+@interface Xamarin_Forms_Platform_iOS_FormsApplicationDelegate : NSObject/*<UIApplicationDelegate>*/ {
+	void *__monoObjectGCHandle;
+}
+	-(void) release;
+	-(id) retain;
+	-(void) dealloc;
+	-(bool) application:(id)p0 willFinishLaunchingWithOptions:(id)p1;
+	-(bool) application:(id)p0 didFinishLaunchingWithOptions:(id)p1;
+	-(void) applicationDidBecomeActive:(id)p0;
+	-(void) applicationWillResignActive:(id)p0;
+	-(void) applicationDidEnterBackground:(id)p0;
+	-(void) applicationWillEnterForeground:(id)p0;
+	-(void) applicationWillTerminate:(id)p0;
+	-(bool) conformsToProtocol:(void *)p0;
+	-(id) init;
+@end
+@implementation Xamarin_Forms_Platform_iOS_FormsApplicationDelegate { } 
+	-(void) release
+	{
+		xamarin_release_trampoline (self, _cmd);
+	}
+
+	-(id) retain
+	{
+		return xamarin_retain_trampoline (self, _cmd);
+	}
+
+	-(void) dealloc
+	{
+		int gchandle = xamarin_get_gchandle (self);
+		xamarin_unregister_nsobject (self, mono_gchandle_get_target (gchandle));
+		xamarin_free_gchandle (self, gchandle);
+		mono_thread_detach_if_exiting ();
+		[super dealloc];
+	}
+
+	-(bool) application:(id)p0 willFinishLaunchingWithOptions:(id)p1
+	{
+		static MonoMethod *managed_method = NULL;
+		return native_to_managed_trampoline_1 (self, _cmd, &managed_method, p0, p1, "UIKit.UIApplication, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Foundation.NSDictionary, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Xamarin.Forms.Platform.iOS.FormsApplicationDelegate, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", "WillFinishLaunching");
+	}
+
+	-(bool) application:(id)p0 didFinishLaunchingWithOptions:(id)p1
+	{
+		static MonoMethod *managed_method = NULL;
+		return native_to_managed_trampoline_1 (self, _cmd, &managed_method, p0, p1, "UIKit.UIApplication, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Foundation.NSDictionary, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Xamarin.Forms.Platform.iOS.FormsApplicationDelegate, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", "FinishedLaunching");
+	}
+
+	-(void) applicationDidBecomeActive:(id)p0
+	{
+		static MonoMethod *managed_method = NULL;
+		native_to_managed_trampoline_4 (self, _cmd, &managed_method, p0, "UIKit.UIApplication, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Xamarin.Forms.Platform.iOS.FormsApplicationDelegate, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", "OnActivated");
+	}
+
+	-(void) applicationWillResignActive:(id)p0
+	{
+		static MonoMethod *managed_method = NULL;
+		native_to_managed_trampoline_4 (self, _cmd, &managed_method, p0, "UIKit.UIApplication, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Xamarin.Forms.Platform.iOS.FormsApplicationDelegate, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", "OnResignActivation");
+	}
+
+	-(void) applicationDidEnterBackground:(id)p0
+	{
+		static MonoMethod *managed_method = NULL;
+		native_to_managed_trampoline_4 (self, _cmd, &managed_method, p0, "UIKit.UIApplication, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Xamarin.Forms.Platform.iOS.FormsApplicationDelegate, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", "DidEnterBackground");
+	}
+
+	-(void) applicationWillEnterForeground:(id)p0
+	{
+		static MonoMethod *managed_method = NULL;
+		native_to_managed_trampoline_4 (self, _cmd, &managed_method, p0, "UIKit.UIApplication, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Xamarin.Forms.Platform.iOS.FormsApplicationDelegate, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", "WillEnterForeground");
+	}
+
+	-(void) applicationWillTerminate:(id)p0
+	{
+		static MonoMethod *managed_method = NULL;
+		native_to_managed_trampoline_4 (self, _cmd, &managed_method, p0, "UIKit.UIApplication, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Xamarin.Forms.Platform.iOS.FormsApplicationDelegate, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", "WillTerminate");
+	}
+
+	-(bool) conformsToProtocol:(void *)p0
+	{
+		static MonoMethod *managed_method = NULL;
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+	}
+
+	-(id) init
+	{
+		static MonoMethod *managed_method = NULL;
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.FormsApplicationDelegate, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
 	}
 @end
 
@@ -3114,7 +3143,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
 	}
 @end
 
@@ -3170,7 +3199,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
 	}
 @end
 
@@ -3273,7 +3302,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.ViewRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.ViewRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
 	}
 @end
 
@@ -3308,7 +3337,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
 	}
 @end
 
@@ -3321,7 +3350,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.ActivityIndicatorRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.ActivityIndicatorRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
 	}
 @end
 
@@ -3341,7 +3370,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.BoxRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.BoxRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
 	}
 @end
 
@@ -3384,13 +3413,13 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
 	}
 
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.NoCaretField, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.NoCaretField, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
 	}
 @end
 
@@ -3403,7 +3432,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.EditorRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.EditorRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
 	}
 @end
 
@@ -3416,7 +3445,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.EntryRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.EntryRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
 	}
 @end
 
@@ -3429,7 +3458,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.FrameRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.FrameRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
 	}
 @end
 
@@ -3449,7 +3478,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.LabelRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.LabelRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
 	}
 @end
 
@@ -3469,7 +3498,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.ProgressBarRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.ProgressBarRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
 	}
 @end
 
@@ -3505,13 +3534,13 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
 	}
 
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.ScrollViewRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.ScrollViewRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
 	}
 @end
 
@@ -3524,7 +3553,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.SearchBarRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.SearchBarRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
 	}
 @end
 
@@ -3544,7 +3573,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.SliderRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.SliderRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
 	}
 @end
 
@@ -3557,7 +3586,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.StepperRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.StepperRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
 	}
 @end
 
@@ -3570,7 +3599,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.SwitchRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.SwitchRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
 	}
 @end
 
@@ -3619,7 +3648,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(void) setSelectedViewController:(id)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "UIKit.UIViewController, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Xamarin.Forms.Platform.iOS.TabbedRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", "set_SelectedViewController");
+		native_to_managed_trampoline_4 (self, _cmd, &managed_method, p0, "UIKit.UIViewController, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Xamarin.Forms.Platform.iOS.TabbedRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", "set_SelectedViewController");
 	}
 
 	-(void) viewDidLoad
@@ -3655,13 +3684,13 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
 	}
 
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.TabbedRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.TabbedRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
 	}
 @end
 
@@ -3697,13 +3726,13 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
 	}
 
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "UIKit.UITableViewSource, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "UIKit.UITableViewSource, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", ".ctor");
 	}
 @end
 
@@ -3791,7 +3820,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.TableViewRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.TableViewRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
 	}
 @end
 
@@ -3834,13 +3863,13 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
 	}
 
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.ChildViewController, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.ChildViewController, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
 	}
 @end
 
@@ -3867,7 +3896,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.EventedViewController, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.EventedViewController, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
 	}
 @end
 
@@ -3880,7 +3909,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.ToolbarRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.ToolbarRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
 	}
 @end
 
@@ -3916,13 +3945,13 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
 	}
 
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.ContextActionsCell+SelectGestureRecognizer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.ContextActionsCell+SelectGestureRecognizer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
 	}
 @end
 
@@ -3972,13 +4001,13 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
 	}
 
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.ContextActionsCell+MoreActionSheetController, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.ContextActionsCell+MoreActionSheetController, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
 	}
 @end
 
@@ -4021,13 +4050,13 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
 	}
 
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.ContextActionsCell+MoreActionSheetDelegate, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.ContextActionsCell+MoreActionSheetDelegate, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
 	}
 @end
 
@@ -4070,13 +4099,13 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
 	}
 
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.ContextActionsCell, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.ContextActionsCell, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
 	}
 @end
 
@@ -4114,7 +4143,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(void) scrollViewWillBeginDragging:(id)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "UIKit.UIScrollView, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Xamarin.Forms.Platform.iOS.ContextScrollViewDelegate, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", "DraggingStarted");
+		native_to_managed_trampoline_4 (self, _cmd, &managed_method, p0, "UIKit.UIScrollView, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Xamarin.Forms.Platform.iOS.ContextScrollViewDelegate, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", "DraggingStarted");
 	}
 
 	-(void) scrollViewWillEndDragging:(id)p0 withVelocity:(CGPoint)p1 targetContentOffset:(CGPoint*)p2
@@ -4126,13 +4155,13 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(void) scrollViewDidScroll:(id)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "UIKit.UIScrollView, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Xamarin.Forms.Platform.iOS.ContextScrollViewDelegate, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", "Scrolled");
+		native_to_managed_trampoline_4 (self, _cmd, &managed_method, p0, "UIKit.UIScrollView, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Xamarin.Forms.Platform.iOS.ContextScrollViewDelegate, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", "Scrolled");
 	}
 
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
 	}
 @end
 
@@ -4145,7 +4174,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.RendererFactory+DefaultRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.RendererFactory+DefaultRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
 	}
 @end
 
@@ -4201,13 +4230,13 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
 	}
 
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.ViewCellRenderer+ViewTableCell, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.ViewCellRenderer+ViewTableCell, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
 	}
 @end
 
@@ -4250,13 +4279,13 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
 	}
 
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.ToolbarItemExtensions+SecondaryToolBarItem, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.ToolbarItemExtensions+SecondaryToolBarItem, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
 	}
 @end
 
@@ -4276,7 +4305,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.ButtonRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.ButtonRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
 	}
 @end
 
@@ -4318,7 +4347,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
 	}
 @end
 
@@ -4396,13 +4425,13 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
 	}
 
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.CarouselPageRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.CarouselPageRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
 	}
 @end
 
@@ -4415,7 +4444,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.DatePickerRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.DatePickerRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
 	}
 @end
 
@@ -4428,7 +4457,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.ImageRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.ImageRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
 	}
 @end
 
@@ -4530,7 +4559,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.ListViewRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.ListViewRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
 	}
 @end
 
@@ -4573,7 +4602,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
 	}
 
 	-(id) initWithFrame:(CGRect)p0
@@ -4592,7 +4621,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.NavigationMenuRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.NavigationMenuRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
 	}
 @end
 
@@ -4649,13 +4678,13 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
 	}
 
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.NavigationRenderer+SecondaryToolbar, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.NavigationRenderer+SecondaryToolbar, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
 	}
 @end
 
@@ -4732,7 +4761,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
 	}
 @end
 
@@ -4810,13 +4839,13 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
 	}
 
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.NavigationRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.NavigationRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
 	}
 @end
 
@@ -4858,7 +4887,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
 	}
 @end
 
@@ -4871,7 +4900,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.OpenGLViewRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.OpenGLViewRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
 	}
 @end
 
@@ -4935,13 +4964,13 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
 	}
 
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.PageRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.PageRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
 	}
 @end
 
@@ -4984,13 +5013,13 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
 	}
 
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.PhoneMasterDetailRenderer+ChildViewController, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.PhoneMasterDetailRenderer+ChildViewController, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
 	}
 @end
 
@@ -5054,13 +5083,13 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
 	}
 
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.PhoneMasterDetailRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.PhoneMasterDetailRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
 	}
 @end
 
@@ -5123,7 +5152,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
 	}
 @end
 
@@ -5136,7 +5165,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.PickerRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.PickerRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
 	}
 @end
 
@@ -5185,7 +5214,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
 	}
 @end
 
@@ -5256,13 +5285,13 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
 	}
 
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.TabletMasterDetailRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.TabletMasterDetailRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
 	}
 @end
 
@@ -5275,7 +5304,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.TimePickerRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.TimePickerRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
 	}
 @end
 
@@ -5314,13 +5343,13 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(void) webViewDidStartLoad:(id)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "UIKit.UIWebView, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Xamarin.Forms.Platform.iOS.WebViewRenderer+CustomWebViewDelegate, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", "LoadStarted");
+		native_to_managed_trampoline_4 (self, _cmd, &managed_method, p0, "UIKit.UIWebView, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Xamarin.Forms.Platform.iOS.WebViewRenderer+CustomWebViewDelegate, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", "LoadStarted");
 	}
 
 	-(void) webViewDidFinishLoad:(id)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "UIKit.UIWebView, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Xamarin.Forms.Platform.iOS.WebViewRenderer+CustomWebViewDelegate, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", "LoadingFinished");
+		native_to_managed_trampoline_4 (self, _cmd, &managed_method, p0, "UIKit.UIWebView, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "Xamarin.Forms.Platform.iOS.WebViewRenderer+CustomWebViewDelegate, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", "LoadingFinished");
 	}
 
 	-(bool) webView:(id)p0 shouldStartLoadWithRequest:(id)p1 navigationType:(NSInteger)p2
@@ -5338,7 +5367,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
 	}
 @end
 
@@ -5381,13 +5410,13 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
 	}
 
 	-(id) init
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_4 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.WebViewRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
+		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, "Xamarin.Forms.Platform.iOS.WebViewRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", ".ctor");
 	}
 @end
 
@@ -5436,13 +5465,12 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 	-(bool) conformsToProtocol:(void *)p0
 	{
 		static MonoMethod *managed_method = NULL;
-		return native_to_managed_trampoline_3 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
+		return native_to_managed_trampoline_2 (self, _cmd, &managed_method, p0, "System.IntPtr, mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", "InvokeConformsToProtocol");
 	}
 @end
 
 	static MTClassMap __xamarin_class_map [] = {
 		{"NSObject", "Foundation.NSObject, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", NULL },
-		{"Xamarin_Forms_Platform_iOS_FormsApplicationDelegate", "Xamarin.Forms.Platform.iOS.FormsApplicationDelegate, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", NULL },
 		{"AppDelegate", "Actividad11.iOS.AppDelegate, Actividad11.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null", NULL },
 		{"CADisplayLink", "CoreAnimation.CADisplayLink, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", NULL },
 		{"CALayer", "CoreAnimation.CALayer, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", NULL },
@@ -5570,6 +5598,7 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 		{"UIKit_UIScrollView__UIScrollViewDelegate", "UIKit.UIScrollView+_UIScrollViewDelegate, Xamarin.iOS, Version=0.0.0.0, Culture=neutral, PublicKeyToken=84e04ff9cfb79065", NULL },
 		{"Xamarin_Forms_Platform_iOS_iOS7ButtonContainer", "Xamarin.Forms.Platform.iOS.iOS7ButtonContainer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", NULL },
 		{"Xamarin_Forms_Platform_iOS_GlobalCloseContextGestureRecognizer", "Xamarin.Forms.Platform.iOS.GlobalCloseContextGestureRecognizer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", NULL },
+		{"Xamarin_Forms_Platform_iOS_FormsApplicationDelegate", "Xamarin.Forms.Platform.iOS.FormsApplicationDelegate, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", NULL },
 		{"Xamarin_Forms_Platform_iOS_ModalWrapper", "Xamarin.Forms.Platform.iOS.ModalWrapper, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", NULL },
 		{"Xamarin_Forms_Platform_iOS_PlatformRenderer", "Xamarin.Forms.Platform.iOS.PlatformRenderer, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", NULL },
 		{"Xamarin_Forms_Platform_iOS_VisualElementRenderer_1", "Xamarin.Forms.Platform.iOS.VisualElementRenderer`1, Xamarin.Forms.Platform.iOS, Version=1.3.1.0, Culture=neutral, PublicKeyToken=null", NULL },
@@ -5638,134 +5667,134 @@ bool native_to_managed_trampoline_46 (id self, SEL _cmd, MonoMethod **managed_me
 
 void xamarin_create_classes () {
 	__xamarin_class_map [0].handle = objc_getClass ("NSObject");
-	__xamarin_class_map [1].handle = [Xamarin_Forms_Platform_iOS_FormsApplicationDelegate class];
-	__xamarin_class_map [2].handle = [AppDelegate class];
-	__xamarin_class_map [3].handle = objc_getClass ("CADisplayLink");
-	__xamarin_class_map [4].handle = objc_getClass ("CALayer");
-	__xamarin_class_map [5].handle = objc_getClass ("NSArray");
-	__xamarin_class_map [6].handle = objc_getClass ("NSAttributedString");
-	__xamarin_class_map [7].handle = objc_getClass ("NSBundle");
-	__xamarin_class_map [8].handle = objc_getClass ("NSCoder");
-	__xamarin_class_map [9].handle = objc_getClass ("NSDate");
-	__xamarin_class_map [10].handle = objc_getClass ("NSIndexPath");
-	__xamarin_class_map [11].handle = objc_getClass ("NSLocale");
-	__xamarin_class_map [12].handle = objc_getClass ("NSMutableAttributedString");
-	__xamarin_class_map [13].handle = objc_getClass ("NSURLRequest");
-	__xamarin_class_map [14].handle = objc_getClass ("Foundation_InternalNSNotificationHandler");
-	__xamarin_class_map [15].handle = objc_getClass ("NSValue");
-	__xamarin_class_map [16].handle = objc_getClass ("NSNumber");
-	__xamarin_class_map [17].handle = objc_getClass ("NSRunLoop");
-	__xamarin_class_map [18].handle = objc_getClass ("NSString");
-	__xamarin_class_map [19].handle = objc_getClass ("NSThread");
-	__xamarin_class_map [20].handle = objc_getClass ("NSTimer");
-	__xamarin_class_map [21].handle = objc_getClass ("NSURL");
-	__xamarin_class_map [22].handle = objc_getClass ("__MonoMac_NSActionDispatcher");
-	__xamarin_class_map [23].handle = objc_getClass ("__Xamarin_NSTimerActionDispatcher");
-	__xamarin_class_map [24].handle = objc_getClass ("__MonoMac_NSAsyncActionDispatcher");
-	__xamarin_class_map [25].handle = objc_getClass ("NSAutoreleasePool");
-	__xamarin_class_map [26].handle = objc_getClass ("NSError");
-	__xamarin_class_map [27].handle = objc_getClass ("UIFontDescriptor");
-	__xamarin_class_map [28].handle = objc_getClass ("NSTimeZone");
-	__xamarin_class_map [29].handle = objc_getClass ("UIBarItem");
-	__xamarin_class_map [30].handle = objc_getClass ("UIResponder");
-	__xamarin_class_map [31].handle = objc_getClass ("UIView");
-	__xamarin_class_map [32].handle = objc_getClass ("UIControl");
-	__xamarin_class_map [33].handle = objc_getClass ("UIButton");
-	__xamarin_class_map [34].handle = objc_getClass ("UIScrollView");
-	__xamarin_class_map [35].handle = objc_getClass ("UICollectionView");
-	__xamarin_class_map [36].handle = objc_getClass ("UICollectionViewLayout");
-	__xamarin_class_map [37].handle = objc_getClass ("UIColor");
-	__xamarin_class_map [38].handle = objc_getClass ("UIKit_UIControlEventProxy");
-	__xamarin_class_map [39].handle = objc_getClass ("UIFont");
-	__xamarin_class_map [40].handle = objc_getClass ("UIEvent");
-	__xamarin_class_map [41].handle = objc_getClass ("UIImage");
-	__xamarin_class_map [42].handle = objc_getClass ("UIViewController");
-	__xamarin_class_map [43].handle = objc_getClass ("UINavigationController");
-	__xamarin_class_map [44].handle = objc_getClass ("UIPickerView");
-	__xamarin_class_map [45].handle = objc_getClass ("UIPopoverController");
-	__xamarin_class_map [46].handle = objc_getClass ("UIPresentationController");
-	__xamarin_class_map [47].handle = objc_getClass ("UIPopoverPresentationController");
-	__xamarin_class_map [48].handle = objc_getClass ("UIScreen");
-	__xamarin_class_map [49].handle = objc_getClass ("UITableView");
-	__xamarin_class_map [50].handle = objc_getClass ("UITableViewCell");
-	__xamarin_class_map [51].handle = objc_getClass ("UIToolbar");
-	__xamarin_class_map [52].handle = objc_getClass ("UIWindow");
-	__xamarin_class_map [53].handle = objc_getClass ("CATransaction");
-	__xamarin_class_map [54].handle = objc_getClass ("NSEnumerator");
-	__xamarin_class_map [55].handle = objc_getClass ("NSException");
-	__xamarin_class_map [56].handle = objc_getClass ("NSNull");
-	__xamarin_class_map [57].handle = objc_getClass ("NSUserActivity");
-	__xamarin_class_map [58].handle = objc_getClass ("NSIndexSet");
-	__xamarin_class_map [59].handle = objc_getClass ("NSNotification");
-	__xamarin_class_map [60].handle = objc_getClass ("GLKView");
-	__xamarin_class_map [61].handle = objc_getClass ("EAGLContext");
-	__xamarin_class_map [62].handle = objc_getClass ("NSParagraphStyle");
-	__xamarin_class_map [63].handle = objc_getClass ("NSShadow");
-	__xamarin_class_map [64].handle = objc_getClass ("NSTextAttachment");
-	__xamarin_class_map [65].handle = objc_getClass ("NSTextContainer");
-	__xamarin_class_map [66].handle = objc_getClass ("UIAlertAction");
-	__xamarin_class_map [67].handle = objc_getClass ("UIAlertController");
-	__xamarin_class_map [68].handle = objc_getClass ("UICollectionReusableView");
-	__xamarin_class_map [69].handle = objc_getClass ("UICollectionViewCell");
-	__xamarin_class_map [70].handle = objc_getClass ("UICollectionViewFlowLayout");
-	__xamarin_class_map [71].handle = objc_getClass ("UITextPosition");
-	__xamarin_class_map [72].handle = objc_getClass ("UITextRange");
-	__xamarin_class_map [73].handle = objc_getClass ("UITextSelectionRect");
-	__xamarin_class_map [74].handle = objc_getClass ("UILocalNotification");
-	__xamarin_class_map [75].handle = objc_getClass ("UIActivityIndicatorView");
-	__xamarin_class_map [76].handle = objc_getClass ("UILabel");
-	__xamarin_class_map [77].handle = objc_getClass ("UIImageView");
-	__xamarin_class_map [78].handle = objc_getClass ("UIDatePicker");
-	__xamarin_class_map [79].handle = objc_getClass ("UINavigationItem");
-	__xamarin_class_map [80].handle = objc_getClass ("UIProgressView");
-	__xamarin_class_map [81].handle = objc_getClass ("UISlider");
-	__xamarin_class_map [82].handle = objc_getClass ("UISwitch");
-	__xamarin_class_map [83].handle = objc_getClass ("UITabBar");
-	__xamarin_class_map [84].handle = objc_getClass ("UITabBarController");
-	__xamarin_class_map [85].handle = objc_getClass ("UITabBarItem");
-	__xamarin_class_map [86].handle = objc_getClass ("UITouch");
-	__xamarin_class_map [87].handle = objc_getClass ("UITraitCollection");
-	__xamarin_class_map [88].handle = objc_getClass ("UIWebView");
-	__xamarin_class_map [89].handle = objc_getClass ("UISplitViewController");
-	__xamarin_class_map [90].handle = objc_getClass ("UIStepper");
-	__xamarin_class_map [91].handle = objc_getClass ("NSData");
-	__xamarin_class_map [92].handle = objc_getClass ("NSDictionary");
-	__xamarin_class_map [93].handle = objc_getClass ("NSMutableData");
-	__xamarin_class_map [94].handle = objc_getClass ("NSMutableDictionary");
-	__xamarin_class_map [95].handle = objc_getClass ("NSNotificationCenter");
-	__xamarin_class_map [96].handle = objc_getClass ("NSSet");
-	__xamarin_class_map [97].handle = objc_getClass ("__NSObject_Disposer");
-	__xamarin_class_map [98].handle = objc_getClass ("UIKit_UIActionSheet__UIActionSheetDelegate");
-	__xamarin_class_map [99].handle = objc_getClass ("UIActionSheet");
-	__xamarin_class_map [100].handle = objc_getClass ("UIKit_UIAlertView__UIAlertViewDelegate");
-	__xamarin_class_map [101].handle = objc_getClass ("UIAlertView");
-	__xamarin_class_map [102].handle = objc_getClass ("UIApplication");
-	__xamarin_class_map [103].handle = objc_getClass ("UIKit_UIBarButtonItem_Callback");
-	__xamarin_class_map [104].handle = objc_getClass ("UIBarButtonItem");
-	__xamarin_class_map [105].handle = objc_getClass ("UIDevice");
-	__xamarin_class_map [106].handle = objc_getClass ("__UIGestureRecognizerToken");
-	__xamarin_class_map [107].handle = objc_getClass ("__UIGestureRecognizerParameterlessToken");
-	__xamarin_class_map [108].handle = objc_getClass ("__UIGestureRecognizerParametrizedToken");
-	__xamarin_class_map [109].handle = objc_getClass ("UIKit_UIGestureRecognizer__UIGestureRecognizerDelegate");
-	__xamarin_class_map [110].handle = objc_getClass ("UIGestureRecognizer");
-	__xamarin_class_map [111].handle = objc_getClass ("__UILongPressGestureRecognizer");
-	__xamarin_class_map [112].handle = objc_getClass ("UILongPressGestureRecognizer");
-	__xamarin_class_map [113].handle = objc_getClass ("__UITapGestureRecognizer");
-	__xamarin_class_map [114].handle = objc_getClass ("UITapGestureRecognizer");
-	__xamarin_class_map [115].handle = objc_getClass ("__UIPanGestureRecognizer");
-	__xamarin_class_map [116].handle = objc_getClass ("UIPanGestureRecognizer");
-	__xamarin_class_map [117].handle = objc_getClass ("UIKit_UIView_UIViewAppearance");
-	__xamarin_class_map [118].handle = objc_getClass ("UIKit_UINavigationBar_UINavigationBarAppearance");
-	__xamarin_class_map [119].handle = objc_getClass ("UINavigationBar");
-	__xamarin_class_map [120].handle = objc_getClass ("UIKit_UISearchBar__UISearchBarDelegate");
-	__xamarin_class_map [121].handle = objc_getClass ("UISearchBar");
-	__xamarin_class_map [122].handle = objc_getClass ("UIKit_UITextField__UITextFieldDelegate");
-	__xamarin_class_map [123].handle = objc_getClass ("UITextField");
-	__xamarin_class_map [124].handle = objc_getClass ("UIKit_UITextView__UITextViewDelegate");
-	__xamarin_class_map [125].handle = objc_getClass ("UITextView");
-	__xamarin_class_map [126].handle = objc_getClass ("UIKit_UIScrollView__UIScrollViewDelegate");
-	__xamarin_class_map [127].handle = [Xamarin_Forms_Platform_iOS_iOS7ButtonContainer class];
-	__xamarin_class_map [128].handle = [Xamarin_Forms_Platform_iOS_GlobalCloseContextGestureRecognizer class];
+	__xamarin_class_map [1].handle = [AppDelegate class];
+	__xamarin_class_map [2].handle = objc_getClass ("CADisplayLink");
+	__xamarin_class_map [3].handle = objc_getClass ("CALayer");
+	__xamarin_class_map [4].handle = objc_getClass ("NSArray");
+	__xamarin_class_map [5].handle = objc_getClass ("NSAttributedString");
+	__xamarin_class_map [6].handle = objc_getClass ("NSBundle");
+	__xamarin_class_map [7].handle = objc_getClass ("NSCoder");
+	__xamarin_class_map [8].handle = objc_getClass ("NSDate");
+	__xamarin_class_map [9].handle = objc_getClass ("NSIndexPath");
+	__xamarin_class_map [10].handle = objc_getClass ("NSLocale");
+	__xamarin_class_map [11].handle = objc_getClass ("NSMutableAttributedString");
+	__xamarin_class_map [12].handle = objc_getClass ("NSURLRequest");
+	__xamarin_class_map [13].handle = objc_getClass ("Foundation_InternalNSNotificationHandler");
+	__xamarin_class_map [14].handle = objc_getClass ("NSValue");
+	__xamarin_class_map [15].handle = objc_getClass ("NSNumber");
+	__xamarin_class_map [16].handle = objc_getClass ("NSRunLoop");
+	__xamarin_class_map [17].handle = objc_getClass ("NSString");
+	__xamarin_class_map [18].handle = objc_getClass ("NSThread");
+	__xamarin_class_map [19].handle = objc_getClass ("NSTimer");
+	__xamarin_class_map [20].handle = objc_getClass ("NSURL");
+	__xamarin_class_map [21].handle = objc_getClass ("__MonoMac_NSActionDispatcher");
+	__xamarin_class_map [22].handle = objc_getClass ("__Xamarin_NSTimerActionDispatcher");
+	__xamarin_class_map [23].handle = objc_getClass ("__MonoMac_NSAsyncActionDispatcher");
+	__xamarin_class_map [24].handle = objc_getClass ("NSAutoreleasePool");
+	__xamarin_class_map [25].handle = objc_getClass ("NSError");
+	__xamarin_class_map [26].handle = objc_getClass ("UIFontDescriptor");
+	__xamarin_class_map [27].handle = objc_getClass ("NSTimeZone");
+	__xamarin_class_map [28].handle = objc_getClass ("UIBarItem");
+	__xamarin_class_map [29].handle = objc_getClass ("UIResponder");
+	__xamarin_class_map [30].handle = objc_getClass ("UIView");
+	__xamarin_class_map [31].handle = objc_getClass ("UIControl");
+	__xamarin_class_map [32].handle = objc_getClass ("UIButton");
+	__xamarin_class_map [33].handle = objc_getClass ("UIScrollView");
+	__xamarin_class_map [34].handle = objc_getClass ("UICollectionView");
+	__xamarin_class_map [35].handle = objc_getClass ("UICollectionViewLayout");
+	__xamarin_class_map [36].handle = objc_getClass ("UIColor");
+	__xamarin_class_map [37].handle = objc_getClass ("UIKit_UIControlEventProxy");
+	__xamarin_class_map [38].handle = objc_getClass ("UIFont");
+	__xamarin_class_map [39].handle = objc_getClass ("UIEvent");
+	__xamarin_class_map [40].handle = objc_getClass ("UIImage");
+	__xamarin_class_map [41].handle = objc_getClass ("UIViewController");
+	__xamarin_class_map [42].handle = objc_getClass ("UINavigationController");
+	__xamarin_class_map [43].handle = objc_getClass ("UIPickerView");
+	__xamarin_class_map [44].handle = objc_getClass ("UIPopoverController");
+	__xamarin_class_map [45].handle = objc_getClass ("UIPresentationController");
+	__xamarin_class_map [46].handle = objc_getClass ("UIPopoverPresentationController");
+	__xamarin_class_map [47].handle = objc_getClass ("UIScreen");
+	__xamarin_class_map [48].handle = objc_getClass ("UITableView");
+	__xamarin_class_map [49].handle = objc_getClass ("UITableViewCell");
+	__xamarin_class_map [50].handle = objc_getClass ("UIToolbar");
+	__xamarin_class_map [51].handle = objc_getClass ("UIWindow");
+	__xamarin_class_map [52].handle = objc_getClass ("CATransaction");
+	__xamarin_class_map [53].handle = objc_getClass ("NSEnumerator");
+	__xamarin_class_map [54].handle = objc_getClass ("NSException");
+	__xamarin_class_map [55].handle = objc_getClass ("NSNull");
+	__xamarin_class_map [56].handle = objc_getClass ("NSUserActivity");
+	__xamarin_class_map [57].handle = objc_getClass ("NSIndexSet");
+	__xamarin_class_map [58].handle = objc_getClass ("NSNotification");
+	__xamarin_class_map [59].handle = objc_getClass ("GLKView");
+	__xamarin_class_map [60].handle = objc_getClass ("EAGLContext");
+	__xamarin_class_map [61].handle = objc_getClass ("NSParagraphStyle");
+	__xamarin_class_map [62].handle = objc_getClass ("NSShadow");
+	__xamarin_class_map [63].handle = objc_getClass ("NSTextAttachment");
+	__xamarin_class_map [64].handle = objc_getClass ("NSTextContainer");
+	__xamarin_class_map [65].handle = objc_getClass ("UIAlertAction");
+	__xamarin_class_map [66].handle = objc_getClass ("UIAlertController");
+	__xamarin_class_map [67].handle = objc_getClass ("UICollectionReusableView");
+	__xamarin_class_map [68].handle = objc_getClass ("UICollectionViewCell");
+	__xamarin_class_map [69].handle = objc_getClass ("UICollectionViewFlowLayout");
+	__xamarin_class_map [70].handle = objc_getClass ("UITextPosition");
+	__xamarin_class_map [71].handle = objc_getClass ("UITextRange");
+	__xamarin_class_map [72].handle = objc_getClass ("UITextSelectionRect");
+	__xamarin_class_map [73].handle = objc_getClass ("UILocalNotification");
+	__xamarin_class_map [74].handle = objc_getClass ("UIActivityIndicatorView");
+	__xamarin_class_map [75].handle = objc_getClass ("UILabel");
+	__xamarin_class_map [76].handle = objc_getClass ("UIImageView");
+	__xamarin_class_map [77].handle = objc_getClass ("UIDatePicker");
+	__xamarin_class_map [78].handle = objc_getClass ("UINavigationItem");
+	__xamarin_class_map [79].handle = objc_getClass ("UIProgressView");
+	__xamarin_class_map [80].handle = objc_getClass ("UISlider");
+	__xamarin_class_map [81].handle = objc_getClass ("UISwitch");
+	__xamarin_class_map [82].handle = objc_getClass ("UITabBar");
+	__xamarin_class_map [83].handle = objc_getClass ("UITabBarController");
+	__xamarin_class_map [84].handle = objc_getClass ("UITabBarItem");
+	__xamarin_class_map [85].handle = objc_getClass ("UITouch");
+	__xamarin_class_map [86].handle = objc_getClass ("UITraitCollection");
+	__xamarin_class_map [87].handle = objc_getClass ("UIWebView");
+	__xamarin_class_map [88].handle = objc_getClass ("UISplitViewController");
+	__xamarin_class_map [89].handle = objc_getClass ("UIStepper");
+	__xamarin_class_map [90].handle = objc_getClass ("NSData");
+	__xamarin_class_map [91].handle = objc_getClass ("NSDictionary");
+	__xamarin_class_map [92].handle = objc_getClass ("NSMutableData");
+	__xamarin_class_map [93].handle = objc_getClass ("NSMutableDictionary");
+	__xamarin_class_map [94].handle = objc_getClass ("NSNotificationCenter");
+	__xamarin_class_map [95].handle = objc_getClass ("NSSet");
+	__xamarin_class_map [96].handle = objc_getClass ("__NSObject_Disposer");
+	__xamarin_class_map [97].handle = objc_getClass ("UIKit_UIActionSheet__UIActionSheetDelegate");
+	__xamarin_class_map [98].handle = objc_getClass ("UIActionSheet");
+	__xamarin_class_map [99].handle = objc_getClass ("UIKit_UIAlertView__UIAlertViewDelegate");
+	__xamarin_class_map [100].handle = objc_getClass ("UIAlertView");
+	__xamarin_class_map [101].handle = objc_getClass ("UIApplication");
+	__xamarin_class_map [102].handle = objc_getClass ("UIKit_UIBarButtonItem_Callback");
+	__xamarin_class_map [103].handle = objc_getClass ("UIBarButtonItem");
+	__xamarin_class_map [104].handle = objc_getClass ("UIDevice");
+	__xamarin_class_map [105].handle = objc_getClass ("__UIGestureRecognizerToken");
+	__xamarin_class_map [106].handle = objc_getClass ("__UIGestureRecognizerParameterlessToken");
+	__xamarin_class_map [107].handle = objc_getClass ("__UIGestureRecognizerParametrizedToken");
+	__xamarin_class_map [108].handle = objc_getClass ("UIKit_UIGestureRecognizer__UIGestureRecognizerDelegate");
+	__xamarin_class_map [109].handle = objc_getClass ("UIGestureRecognizer");
+	__xamarin_class_map [110].handle = objc_getClass ("__UILongPressGestureRecognizer");
+	__xamarin_class_map [111].handle = objc_getClass ("UILongPressGestureRecognizer");
+	__xamarin_class_map [112].handle = objc_getClass ("__UITapGestureRecognizer");
+	__xamarin_class_map [113].handle = objc_getClass ("UITapGestureRecognizer");
+	__xamarin_class_map [114].handle = objc_getClass ("__UIPanGestureRecognizer");
+	__xamarin_class_map [115].handle = objc_getClass ("UIPanGestureRecognizer");
+	__xamarin_class_map [116].handle = objc_getClass ("UIKit_UIView_UIViewAppearance");
+	__xamarin_class_map [117].handle = objc_getClass ("UIKit_UINavigationBar_UINavigationBarAppearance");
+	__xamarin_class_map [118].handle = objc_getClass ("UINavigationBar");
+	__xamarin_class_map [119].handle = objc_getClass ("UIKit_UISearchBar__UISearchBarDelegate");
+	__xamarin_class_map [120].handle = objc_getClass ("UISearchBar");
+	__xamarin_class_map [121].handle = objc_getClass ("UIKit_UITextField__UITextFieldDelegate");
+	__xamarin_class_map [122].handle = objc_getClass ("UITextField");
+	__xamarin_class_map [123].handle = objc_getClass ("UIKit_UITextView__UITextViewDelegate");
+	__xamarin_class_map [124].handle = objc_getClass ("UITextView");
+	__xamarin_class_map [125].handle = objc_getClass ("UIKit_UIScrollView__UIScrollViewDelegate");
+	__xamarin_class_map [126].handle = [Xamarin_Forms_Platform_iOS_iOS7ButtonContainer class];
+	__xamarin_class_map [127].handle = [Xamarin_Forms_Platform_iOS_GlobalCloseContextGestureRecognizer class];
+	__xamarin_class_map [128].handle = [Xamarin_Forms_Platform_iOS_FormsApplicationDelegate class];
 	__xamarin_class_map [129].handle = [Xamarin_Forms_Platform_iOS_ModalWrapper class];
 	__xamarin_class_map [130].handle = [Xamarin_Forms_Platform_iOS_PlatformRenderer class];
 	__xamarin_class_map [131].handle = [Xamarin_Forms_Platform_iOS_VisualElementRenderer_1 class];

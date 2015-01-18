@@ -19,7 +19,9 @@ namespace Actividad11.iOS
 
 			window = new UIWindow (UIScreen.MainScreen.Bounds);
 
-			window.RootViewController = App.GetMainPage ().CreateViewController ();
+			var myapp = new App();
+
+			window.RootViewController = myapp.MainPage.CreateViewController();
 			window.MakeKeyAndVisible ();
 
 			return true;
