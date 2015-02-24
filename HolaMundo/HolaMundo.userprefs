@@ -1,10 +1,10 @@
-﻿<Properties>
-  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug|iPhoneSimulator" PreferredExecutionTarget="MonoDevelop.IPhone.IPhoneSimulatorTarget.IPhone6.8.1" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="HolaMundo/App.cs">
+﻿<Properties StartupItem="Android\HolaMundo.Android.csproj" GitUserInfo="UsingGIT">
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" PreferredExecutionTarget="Android.AVD_for_Nexus_4_by_Google" />
+  <MonoDevelop.Ide.Workbench ActiveDocument="HolaMundo\App1.cs">
     <Files>
-      <File FileName="iOS/AppDelegate.cs" Line="1" Column="1" />
-      <File FileName="HolaMundo/App.cs" Line="2" Column="2" />
-      <File FileName="iOS/Main.cs" Line="1" Column="1" />
+      <File FileName="iOS\AppDelegate.cs" Line="1" Column="1" />
+      <File FileName="HolaMundo\App1.cs" Line="1" Column="1" />
+      <File FileName="iOS\Main.cs" Line="1" Column="1" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
