@@ -1,8 +1,8 @@
-﻿<Properties>
-  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug|iPhoneSimulator" PreferredExecutionTarget="MonoDevelop.IPhone.IPhoneSimulatorTarget.IPhone6.8.1" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="Actividad6/App.cs">
+﻿<Properties StartupItem="Android\Actividad6.Android.csproj" GitUserInfo="UsingGIT">
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug|iPhoneSimulator" PreferredExecutionTarget="Android.AVD_for_Nexus_4_by_Google" />
+  <MonoDevelop.Ide.Workbench ActiveDocument="Actividad6\App.cs">
     <Files>
-      <File FileName="Actividad6/App.cs" Line="28" Column="28" />
+      <File FileName="Actividad6\App.cs" Line="6" Column="6" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
