@@ -9,12 +9,12 @@ namespace Actividad7
 		{
 			Label texto = new Label {
 				Text = "Página 1",
-				TextColor = Color.Blue
+				TextColor = Color.Teal
 			};
 
 			Button boton = new Button
 			{
-				Text = "Click para navegar a la página2"
+				Text = "Click para navegar a la página 2"
 			};
 
 			boton.Clicked += (sender, e) => {

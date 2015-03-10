@@ -9,7 +9,16 @@ namespace Actividad7
 		{
 			Label texto = new Label {
 				Text = "Página 2",
-				TextColor = Color.Green
+				TextColor = Color.White
+			};
+
+			Button boton = new Button
+			{
+				Text = "Click para navegar a la página 3"
+			};
+
+			boton.Clicked += (sender, e) => {
+				this.Navigation.PushAsync(new Pagina3());
 			};
 
 			//Stacklayout permite apilar los controles verticalmente
@@ -17,10 +26,10 @@ namespace Actividad7
 			{
 				Children =
 				{
-					texto
-
+					texto,
+					boton
 				}
-			};
+				};
 
 
 			//Como esta clase hereda de ContentPage, podemos usar estas propiedades directamente
