@@ -1,11 +1,11 @@
 ﻿<Properties StartupItem="Android\Actividad7.Android.csproj" GitUserInfo="UsingGIT">
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug|iPhoneSimulator" PreferredExecutionTarget="Android.AVD_for_Nexus_4_by_Google" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="Actividad7\Pagina3.cs">
+  <MonoDevelop.Ide.Workbench ActiveDocument="Actividad7\App.cs">
     <Files>
       <File FileName="Actividad7\App.cs" Line="1" Column="1" />
       <File FileName="Actividad7\Pagina1.cs" Line="1" Column="1" />
       <File FileName="Actividad7\Pagina2.cs" Line="1" Column="1" />
-      <File FileName="Actividad7\Pagina3.cs" Line="6" Column="6" />
+      <File FileName="Actividad7\Pagina3.cs" Line="2" Column="2" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
