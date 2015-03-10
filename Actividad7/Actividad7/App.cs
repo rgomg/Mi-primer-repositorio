@@ -1,5 +1,7 @@
-﻿using System;
+﻿//using System;
+using System;
 using Xamarin.Forms;
+
 
 namespace Actividad7
 {
