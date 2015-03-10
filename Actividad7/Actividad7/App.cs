@@ -1,6 +1,5 @@
 ﻿using System;
 using Xamarin.Forms;
-
 namespace Actividad7
 {
 	public class App
