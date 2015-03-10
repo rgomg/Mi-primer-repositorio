@@ -2,17 +2,14 @@
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug|iPhoneSimulator" PreferredExecutionTarget="Android.AVD_for_Nexus_4_by_Google" />
   <MonoDevelop.Ide.Workbench ActiveDocument="Actividad7\Pagina3.cs">
     <Files>
-      <File FileName="Actividad7\App.cs" Line="3" Column="3" />
-      <File FileName="Actividad7\Pagina1.cs" Line="44" Column="44" />
-      <File FileName="Actividad7\Pagina2.cs" Line="39" Column="39" />
+      <File FileName="Actividad7\App.cs" Line="1" Column="1" />
+      <File FileName="Actividad7\Pagina1.cs" Line="1" Column="1" />
+      <File FileName="Actividad7\Pagina2.cs" Line="1" Column="1" />
       <File FileName="Actividad7\Pagina3.cs" Line="6" Column="6" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
-    <BreakpointStore>
-      <RunToCursorBreakpoint file="C:\Users\sacm2085\Xamarin\Actividad7\Actividad7\Pagina2.cs" line="21" column="10" />
-      <RunToCursorBreakpoint file="C:\Users\sacm2085\Xamarin\Actividad7\Actividad7\Pagina2.cs" line="21" column="40" />
-    </BreakpointStore>
+    <BreakpointStore />
   </MonoDevelop.Ide.DebuggingService.Breakpoints>
   <MonoDevelop.Ide.DebuggingService.PinnedWatches />
 </Properties>
